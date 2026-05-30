@@ -1,0 +1,11 @@
+# Ensure bash scripts always use LF (Linux) line endings
+*.sh    text eol=lf
+
+# Python and other text files — auto line ending by OS
+*.py    text
+*.txt   text
+*.md    text
+*.json  text
+
+# Binary files — no conversion
+*.pf    binary

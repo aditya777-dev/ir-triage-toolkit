@@ -1,0 +1,11 @@
+# IR Triage Toolkit — Python Dependencies
+#
+# The toolkit uses only the Python standard library.
+# No third-party packages are required to run triage.py or collect_windows.py.
+#
+# Standard library modules used:
+#   argparse, datetime, os, pathlib, platform, subprocess, sys
+#
+# Optional: install psutil for richer cross-platform process data
+# Uncomment the line below if you want psutil support:
+# psutil>=5.9.0
